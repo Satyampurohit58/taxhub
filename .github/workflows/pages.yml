@@ -1,0 +1,49 @@
+# Publishes the MVP to GitHub Pages.
+#
+# app/dist is already a complete static site — no build step, no dependencies —
+# so this just uploads the folder as-is. The live link points straight at the
+# app rather than at the repo README.
+
+name: Deploy MVP to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; the newest push wins.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Guard: the corpus is the whole product. If it ever fails to ship,
+      # fail loudly here rather than deploying a shell that loads forever.
+      - name: Check the corpus is present
+        run: |
+          test -f app/dist/data/corpus.json
+          node -e "
+            const c = require('./app/dist/data/corpus.json');
+            if (!c.chunks?.length) { console.error('corpus is empty'); process.exit(1); }
+            console.log(\`corpus ok — \${c.chunks.length} chunks, statutes current to \${c.meta.statuteBuildDate}\`);
+          "
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
