@@ -41,7 +41,11 @@ jobs:
             console.log(\`corpus ok — \${c.chunks.length} chunks, statutes current to \${c.meta.statuteBuildDate}\`);
           "
 
+      # enablement: turns Pages on if it is not already configured, so a fresh
+      # clone or fork deploys without anyone touching repo settings first.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: app/dist
