@@ -4,6 +4,10 @@
 
 Submitted by **Satyam Purohit** for the Founders' Associate / EIR role at CITO.
 
+### ▶ Live MVP — https://satyampurohit58.github.io/taxhub/
+
+No sign-up. Ask it about the *Kleinunternehmer* threshold or retention periods, then click a citation to read the statute behind it.
+
 ---
 
 ## Deliverables
