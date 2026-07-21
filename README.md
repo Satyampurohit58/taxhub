@@ -10,9 +10,12 @@ Submitted by **Satyam Purohit** for the Founders' Associate / EIR role at CITO.
 
 | | |
 |---|---|
-| **[01-INVESTMENT-MEMO.md](01-INVESTMENT-MEMO.md)** | The investor cut — market, ICP, willingness to pay, DATEV gap, wedge, moat, unit economics, go/no-go |
-| **[02-ONE-PAGER.md](02-ONE-PAGER.md)** | What I would build first as the real product, and the first three moves in 30 days |
+| **[TaxHub-Investor-Deck.pptx](TaxHub-Investor-Deck.pptx)** | The investor deck — 17 slides, the memo in presentation form |
+| **[01-INVESTMENT-MEMO.pdf](01-INVESTMENT-MEMO.pdf)** · [.md](01-INVESTMENT-MEMO.md) | The investor cut — market, ICP, willingness to pay, DATEV gap, wedge, moat, unit economics, go/no-go |
+| **[02-ONE-PAGER.pdf](02-ONE-PAGER.pdf)** · [.md](02-ONE-PAGER.md) | What I would build first as the real product, and the first three moves in 30 days |
 | **[app/](app/)** | The live MVP — grounded knowledge + intake core, built with Claude Code |
+
+The Markdown files are the source of truth; the PDFs and the deck are generated from them.
 
 **The one-line thesis:** German tax practices are not under-digitised — DATEV saturated them years ago. They are **capacity-constrained**. So sell them the assistant they cannot hire, enter through the phone because it needs no integration, and let the knowledge layer become the thing they cannot leave.
 
