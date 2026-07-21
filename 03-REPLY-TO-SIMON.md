@@ -14,10 +14,7 @@ What is actually scarce is **people**. Practices are turning away profitable man
 
 From there the sequencing follows: **lead with intake** (it needs no DATEV integration, so it skips the procurement fight entirely and can be live in days), **expand into knowledge** (the firm-private corpus and its correction history is what still matters once generation is free), **deepen into workflow** last.
 
-**What I built** — a working slice of the knowledge and intake core, deliberately with no backend at all:
-
-- **[LIVE LINK]**
-- **[REPO LINK]**
+**What I built** — a working slice of the knowledge and intake core, deliberately with no backend at all. It is attached as a **single HTML file: just open `TaxHub-MVP.html` in your browser.** No install, no server, no sign-up, and it works offline — the entire knowledge base is inside the file.
 
 It is grounded in **4,446 paragraph-level chunks from 9 real German tax statutes** (EStG, UStG, AO, StBVV, GewStG, KStG, EStDV, UStDV, HGB), ingested unmodified from gesetze-im-internet.de and current to 2 July 2026. Retrieval runs live in the browser — no vector DB, no backend.
 

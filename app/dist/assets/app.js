@@ -36,6 +36,40 @@ const el = (tag, cls, html) => {
 // leave boot wedged on the first step forever.
 const yieldPaint = () => new Promise((r) => setTimeout(r, 16));
 
+/**
+ * Data loading works two ways from one codebase:
+ *   served  — fetch the JSON alongside the page
+ *   bundled — read it from an inlined JSON block embedded in the document, so
+ *             the single-file build runs from file:// with no server
+ *
+ * (Deliberately no literal script-tag text anywhere in this file: the HTML
+ * parser ends a script at the first closing tag it sees, even inside a comment.)
+ */
+async function loadData(name) {
+  const inline = document.getElementById(`data-${name}`);
+  if (inline) return JSON.parse(inline.textContent);
+  return fetch(`data/${name}.json`).then((r) => r.json());
+}
+
+/**
+ * localStorage throws in some file:// and private-browsing contexts. Losing the
+ * saved key or question history is survivable; a boot crash is not.
+ */
+const store = {
+  get(k) { try { return store.get(k); } catch { return null; } },
+  set(k, v) { try { store.set(k, v); } catch { /* non-fatal */ } },
+  del(k) { try { store.del(k); } catch { /* non-fatal */ } },
+};
+
+async function copy(text, msg) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(msg);
+  } catch {
+    toast('Copy blocked by the browser — select the text manually');
+  }
+}
+
 let index = null;
 let corpus = null;
 let seeded = [];
@@ -53,10 +87,7 @@ async function boot() {
 
   step('Loading statute corpus…', 12);
   await yieldPaint();
-  const [c, a] = await Promise.all([
-    fetch('data/corpus.json').then((r) => r.json()),
-    fetch('data/answers.json').then((r) => r.json()),
-  ]);
+  const [c, a] = await Promise.all([loadData('corpus'), loadData('answers')]);
   corpus = c;
   seeded = a.answers;
 
@@ -177,11 +208,11 @@ document.addEventListener('keydown', (e) => {
 // Recent questions
 // ---------------------------------------------------------------------------
 
-const getRecent = () => { try { return JSON.parse(localStorage.getItem(RECENT_STORE)) || []; } catch { return []; } };
+const getRecent = () => { try { return JSON.parse(store.get(RECENT_STORE)) || []; } catch { return []; } };
 
 function pushRecent(q) {
   const list = [q, ...getRecent().filter((x) => x !== q)].slice(0, 6);
-  localStorage.setItem(RECENT_STORE, JSON.stringify(list));
+  store.set(RECENT_STORE, JSON.stringify(list));
   renderRecent();
 }
 
@@ -200,7 +231,7 @@ function renderRecent() {
   }
 }
 
-$('#clear-recent').onclick = () => { localStorage.removeItem(RECENT_STORE); renderRecent(); };
+$('#clear-recent').onclick = () => { store.del(RECENT_STORE); renderRecent(); };
 
 // ---------------------------------------------------------------------------
 // Rendering helpers
@@ -261,10 +292,7 @@ document.addEventListener('click', (e) => {
   setTimeout(() => card.classList.remove('flash'), 1400);
 });
 
-$('#copy-answer').onclick = async () => {
-  await navigator.clipboard.writeText($('#answer').innerText);
-  toast('Answer copied');
-};
+$('#copy-answer').onclick = () => copy($('#answer').innerText, 'Answer copied');
 
 function setMode(kind, text) {
   const labels = { live: 'Grounded', seeded: 'Grounded · saved', retrieval: 'Sources only', err: 'Unavailable' };
@@ -389,7 +417,7 @@ async function ask(query) {
     return;
   }
 
-  const key = localStorage.getItem(KEY_STORE);
+  const key = store.get(KEY_STORE);
 
   if (key) {
     setMode('live', `${hits.length} passages in ${ms} ms · writing answer…`);
@@ -528,9 +556,9 @@ function runIntake() {
   dr.append(el('h3', null, 'Drafted reply — review before sending'));
   const wrapEl = el('div', 'draft');
   wrapEl.append(el('pre', null, escapeHtml(r.email)));
-  const copy = el('button', 'mini copy', 'Copy');
-  copy.onclick = async () => { await navigator.clipboard.writeText(r.email); toast('Draft copied'); };
-  wrapEl.append(copy);
+  const copyBtn = el('button', 'mini copy', 'Copy');
+  copyBtn.onclick = () => copy(r.email, 'Draft copied');
+  wrapEl.append(copyBtn);
   dr.append(wrapEl);
   add(dr);
 
@@ -549,7 +577,7 @@ $('#intake-clear').onclick = () => {
 // ---------------------------------------------------------------------------
 
 function refreshKeyState() {
-  const has = !!localStorage.getItem(KEY_STORE);
+  const has = !!store.get(KEY_STORE);
   const s = $('#keystate');
   s.textContent = has ? `Connected — answers written by ${MODEL}.` : 'Not connected — saved answers and sources only.';
   s.style.color = has ? 'var(--ok)' : 'var(--ink-3)';
@@ -558,13 +586,13 @@ function refreshKeyState() {
 $('#savekey').onclick = () => {
   const v = $('#apikey').value.trim();
   if (!v) return;
-  localStorage.setItem(KEY_STORE, v);
+  store.set(KEY_STORE, v);
   $('#apikey').value = '';
   refreshKeyState();
   toast('Model connected');
   openSettings(false);
 };
-$('#clearkey').onclick = () => { localStorage.removeItem(KEY_STORE); refreshKeyState(); toast('Model disconnected'); };
+$('#clearkey').onclick = () => { store.del(KEY_STORE); refreshKeyState(); toast('Model disconnected'); };
 
 boot().catch((err) => {
   $('#boot-step').textContent = `Failed to load: ${err.message}`;

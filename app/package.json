@@ -10,6 +10,7 @@
     "build": "node ingest/build-corpus.mjs",
     "eval": "node ingest/eval-retrieval.mjs",
     "verify": "node ingest/verify.mjs",
+    "bundle": "node build-single-file.mjs",
     "check": "node ingest/build-corpus.mjs && node ingest/eval-retrieval.mjs && node ingest/verify.mjs"
   }
 }

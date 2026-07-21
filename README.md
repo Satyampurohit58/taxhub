@@ -13,7 +13,8 @@ Submitted by **Satyam Purohit** for the Founders' Associate / EIR role at CITO.
 | **[TaxHub-Investor-Deck.pptx](TaxHub-Investor-Deck.pptx)** | The investor deck — 17 slides, the memo in presentation form |
 | **[01-INVESTMENT-MEMO.pdf](01-INVESTMENT-MEMO.pdf)** · [.md](01-INVESTMENT-MEMO.md) | The investor cut — market, ICP, willingness to pay, DATEV gap, wedge, moat, unit economics, go/no-go |
 | **[02-ONE-PAGER.pdf](02-ONE-PAGER.pdf)** · [.md](02-ONE-PAGER.md) | What I would build first as the real product, and the first three moves in 30 days |
-| **[app/](app/)** | The live MVP — grounded knowledge + intake core, built with Claude Code |
+| **[TaxHub-MVP.html](TaxHub-MVP.html)** | **The MVP as one self-contained file — just open it in a browser** |
+| **[app/](app/)** | Source for the MVP — grounded knowledge + intake core, built with Claude Code |
 
 The Markdown files are the source of truth; the PDFs and the deck are generated from them.
 
@@ -65,14 +66,24 @@ The **"Voluntary disclosure"** scenario shows the opposite behaviour: it escalat
 
 ## Running it
 
+**Easiest — open [`TaxHub-MVP.html`](TaxHub-MVP.html) in any browser.** One 3.8 MB file, no install, no server, works offline. The whole corpus, index and UI are inlined.
+
+Or run the source:
+
 ```bash
 cd app
 node serve.mjs        # → http://localhost:8080
 ```
 
-No dependencies, no build step, no install. Node 18+.
+No dependencies, no build step, no install. Node 18+. Served this way `dist/index.html` needs an HTTP origin — ES modules and `fetch()` do not work from disk, which is exactly what the single-file build exists to solve.
 
-It must be served over HTTP — opening `dist/index.html` from disk will not work, because ES modules and `fetch()` need an origin.
+Rebuild the single file after changing anything in `dist/`:
+
+```bash
+npm run bundle        # → ../TaxHub-MVP.html
+```
+
+The bundler self-checks its output and exits non-zero if the result is structurally broken, because a corrupted bundle still looks like a plausible 3.8 MB HTML file.
 
 ### Deploying
 
