@@ -206,9 +206,12 @@ for (const law of LAWS) {
     const num = numMatch ? numMatch[1] + (numMatch[2] || '') : null;
     if (law.keep && numMatch && !law.keep(parseInt(numMatch[1], 10))) continue;
 
+    // Titles can carry nested markup (HGB §257 has a heading plus a subheading).
+    // Strip to a space, not to nothing, or they run together as
+    // "Aufbewahrung von UnterlagenAufbewahrungsfristen".
     const title = decodeEntities(
       norm.match(/<titel[^>]*>([\s\S]*?)<\/titel>/)?.[1] ?? ''
-    ).replace(/<[^>]+>/g, '').trim();
+    ).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
     const textBlock = norm.match(/<textdaten>([\s\S]*?)<\/textdaten>/)?.[1];
     if (!textBlock) continue;

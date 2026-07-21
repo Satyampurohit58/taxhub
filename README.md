@@ -39,7 +39,9 @@ A **fully static, backend-free** web app. No server, no database, no vector stor
 
 Retrieval is live in all three. The app never invents prose to fill a gap — in retrieval-only mode it says so and shows you the paragraphs instead. For a tax assistant, a visible "I don't know" is worth more than a fluent wrong answer, so the mode is always on screen.
 
-**To see full live synthesis**, paste an Anthropic API key into the footer field. It is stored in your browser's `localStorage` and sent only to `api.anthropic.com`. No key is bundled with this repo.
+**To see full live synthesis**, open **Settings** (gear icon, top right) and connect an Anthropic API key. It is stored in your browser's `localStorage` and sent only to `api.anthropic.com`. No key is bundled with this repo.
+
+Answers are deep-linkable — `?q=…` reruns a question and `?tab=intake` opens the intake surface, so a colleague can be sent the exact answer you are looking at.
 
 ### Two questions worth asking it
 

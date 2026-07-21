@@ -255,12 +255,15 @@ function extractContact(text) {
   const email = text.match(/[\w.+-]+@[\w-]+\.[\w.]+/)?.[0].replace(/[.,;:]+$/, '') ?? null;
   const phone = text.match(/(?:\+49|0)[\d\s/()-]{7,}\d/)?.[0]?.trim() ?? null;
   // "Herr/Frau X", or a "Mein Name ist X" / "hier spricht X" opener.
+  // The honorific is captured separately: German business correspondence opens
+  // "Guten Tag Frau Kessler", never "Guten Tag Kessler".
+  const honorific = text.match(/\b(Herr|Frau)\s+[A-ZÄÖÜ][\wäöüß]+/)?.[1] ?? null;
   const name =
     text.match(/(?:mein name ist|hier (?:ist|spricht)|ich hei[sß]e)\s+([A-ZÄÖÜ][\wäöüß]+(?:\s+[A-ZÄÖÜ][\wäöüß]+){0,2})/i)?.[1] ??
     text.match(/\b(?:Herr|Frau)\s+([A-ZÄÖÜ][\wäöüß]+(?:\s+[A-ZÄÖÜ][\wäöüß]+)?)/)?.[1] ??
     null;
   const company = text.match(/\b([A-ZÄÖÜ][\wäöüß&.\- ]{2,40}?\s(?:GmbH(?:\s*&\s*Co\.?\s*KG)?|UG(?:\s*\(haftungsbeschränkt\))?|GbR|OHG|KG|e\.K\.))/)?.[1]?.trim() ?? null;
-  return { name, company, email, phone };
+  return { name, honorific, company, email, phone };
 }
 
 // ---------------------------------------------------------------------------
@@ -400,7 +403,7 @@ export function analyseIntake(text, index, today = new Date()) {
  */
 function draftEmail({ cls, contact, deadline, docs }) {
   const salutation = contact.name
-    ? `Guten Tag ${contact.name},`
+    ? `Guten Tag ${contact.honorific ? `${contact.honorific} ` : ''}${contact.name},`
     : 'Guten Tag,';
 
   const opener = {
@@ -420,7 +423,7 @@ function draftEmail({ cls, contact, deadline, docs }) {
 
   if (deadline?.due) {
     parts.push(
-      `Wir haben Ihren Vorgang vorgemerkt. Nach unserer Berechnung endet die Einspruchsfrist am **${deadline.due}** (ein Monat nach Bekanntgabe, ${deadline.cite}). Wir haben die Frist in unserer Fristenkontrolle erfasst.`,
+      `Wir haben Ihren Vorgang vorgemerkt. Nach unserer Berechnung endet die Einspruchsfrist am ${deadline.due} (ein Monat nach Bekanntgabe, ${deadline.cite}). Wir haben die Frist in unserer Fristenkontrolle erfasst.`,
       ''
     );
   } else if (deadline) {

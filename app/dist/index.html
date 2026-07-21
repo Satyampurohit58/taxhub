@@ -3,137 +3,186 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TaxHub — grounded knowledge & intake for Steuerberater</title>
-<meta name="description" content="A thin but real slice of an AI-native operating hub for German tax practices: source-cited Q&A over live statute text, and structured intake triage.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>§</text></svg>">
+<title>TaxHub — Kanzlei Musterberater</title>
+<meta name="description" content="AI operating hub for tax practices: grounded, source-cited answers from current statute law, and structured intake for every inbound enquiry.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231c4e7a'/><text x='50' y='74' font-size='68' font-family='serif' fill='white' text-anchor='middle'>§</text></svg>">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
 
+<!-- boot overlay ─────────────────────────────────────────────────────────── -->
+<div id="boot">
+  <div class="boot-card">
+    <div class="boot-mark">§</div>
+    <div class="boot-name">TaxHub</div>
+    <div class="boot-step" id="boot-step">Loading statute corpus…</div>
+    <div class="boot-track"><i id="boot-bar"></i></div>
+  </div>
+</div>
+
 <header class="top">
-  <div class="wrap topbar">
+  <div class="topbar">
     <div class="brand">
       <span class="mark">§</span>
-      <div>
+      <div class="brandtext">
         <strong>TaxHub</strong>
-        <span class="sub">Vertical AI hub for Steuerberater — working slice</span>
+        <span class="sub">Kanzlei Musterberater PartG mbB</span>
       </div>
     </div>
+
     <nav class="tabs" id="tabs">
-      <button data-tab="knowledge" class="on">Knowledge</button>
-      <button data-tab="intake">Intake</button>
-      <button data-tab="thesis">Thesis</button>
+      <button data-tab="knowledge" class="on">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v14H5.5A1.5 1.5 0 0 0 4 19.5zM8 8h7M8 11h5"/></svg>
+        Knowledge
+      </button>
+      <button data-tab="intake">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h9"/><circle cx="19" cy="18" r="2.5"/></svg>
+        Intake
+        <span class="tab-count" id="intake-count" hidden>5</span>
+      </button>
     </nav>
+
+    <div class="topright">
+      <button class="icon-btn" id="open-settings" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+      </button>
+      <div class="who" title="Signed in">
+        <span class="avatar">MB</span>
+        <span class="whoname">M. Berater</span>
+      </div>
+    </div>
   </div>
 </header>
 
 <!-- ── Knowledge ─────────────────────────────────────────────────────────── -->
-<main id="tab-knowledge" class="wrap tabpane">
+<main id="tab-knowledge" class="tabpane">
+ <div class="shell">
+  <aside class="side">
+    <div class="side-block">
+      <h4>Knowledge base</h4>
+      <div class="kb-stat"><b id="stat-chunks">…</b> passages</div>
+      <div class="kb-stat"><b id="stat-laws">…</b> statutes indexed</div>
+      <div class="kb-stat kb-fresh">Current to <b id="stat-build">…</b></div>
+      <ul class="lawlist" id="lawlist"></ul>
+    </div>
+    <div class="side-block" id="recent-block" hidden>
+      <h4>Recent <button class="linkbtn" id="clear-recent">clear</button></h4>
+      <ul class="recent" id="recent"></ul>
+    </div>
+  </aside>
 
-  <section class="hero">
-    <h1>Ask the firm's knowledge base.</h1>
-    <p class="lede">
-      Grounded in <strong id="stat-chunks">…</strong> paragraph-level chunks from
-      <strong id="stat-laws">…</strong> German tax statutes, retrieved unmodified from
-      <a href="https://www.gesetze-im-internet.de/" target="_blank" rel="noopener">gesetze-im-internet.de</a>.
-      Every claim carries a citation you can open and check.
-    </p>
-  </section>
+  <div class="content">
+    <div class="pagehead">
+      <h1>Ask the knowledge base</h1>
+      <p class="lede">Answers are grounded in current statute law and every claim is cited. Open any citation to read the source.</p>
+    </div>
 
-  <form class="ask" id="ask-form" autocomplete="off">
-    <input id="q" type="text" placeholder="e.g. How long must booking vouchers be retained?" aria-label="Question">
-    <button type="submit" id="ask-btn">Ask</button>
-  </form>
+    <form class="ask" id="ask-form" autocomplete="off">
+      <span class="ask-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </span>
+      <input id="q" type="text" placeholder="Search the knowledge base…  (press / to focus)" aria-label="Question">
+      <kbd class="slash">/</kbd>
+      <button type="submit" id="ask-btn">Ask</button>
+    </form>
 
-  <div class="chips" id="examples"></div>
+    <div id="suggest-block">
+      <div class="suggest-label">Common questions</div>
+      <div class="chips" id="examples"></div>
+    </div>
 
-  <div id="answer-region" hidden>
-    <div class="mode-bar" id="mode-bar"></div>
-    <article class="answer" id="answer"></article>
-    <section class="sources">
-      <h3>Retrieved sources <span class="muted" id="retr-meta"></span></h3>
-      <div id="sources"></div>
-    </section>
+    <div id="answer-region" hidden>
+      <div class="answer-head">
+        <div class="mode-bar" id="mode-bar"></div>
+        <button class="mini" id="copy-answer" title="Copy answer">Copy</button>
+      </div>
+      <article class="answer" id="answer"></article>
+      <section class="sources">
+        <div class="sources-head">
+          <h3>Sources <span class="muted" id="retr-meta"></span></h3>
+          <button class="mini" id="toggle-all">Expand all</button>
+        </div>
+        <div id="sources"></div>
+      </section>
+    </div>
   </div>
-
-  <div class="empty" id="knowledge-empty">
-    <p>Pick a question above, or type your own — retrieval runs live over the full corpus either way.</p>
-  </div>
+ </div>
 </main>
 
 <!-- ── Intake ────────────────────────────────────────────────────────────── -->
-<main id="tab-intake" class="wrap tabpane" hidden>
+<main id="tab-intake" class="tabpane" hidden>
+ <div class="shell">
+  <aside class="side">
+    <div class="side-block">
+      <h4>Sample enquiries</h4>
+      <p class="side-note">Load a recent inbound message to see how it is captured.</p>
+      <ul class="scenlist" id="scenarios"></ul>
+    </div>
+  </aside>
 
-  <section class="hero">
-    <h1>Turn an inbound message into a mandate.</h1>
-    <p class="lede">
-      Paste a call note, an email or a contact-form submission. The hub classifies the request,
-      computes the statutory deadline, lists the documents to request, indicates the StBVV fee
-      basis and drafts the reply.
-    </p>
-  </section>
+  <div class="content">
+    <div class="pagehead">
+      <h1>Inbound enquiry</h1>
+      <p class="lede">Paste a call note, an email or a contact-form submission. It is classified, deadline-checked and turned into a mandate record with a drafted reply.</p>
+    </div>
 
-  <div class="chips" id="scenarios"></div>
+    <form class="intake-form" id="intake-form">
+      <textarea id="intake-text" rows="8" placeholder="Paste the inbound message here…" aria-label="Inbound message"></textarea>
+      <div class="intake-actions">
+        <button type="submit">Process enquiry</button>
+        <button type="button" class="mini" id="intake-clear">Clear</button>
+      </div>
+    </form>
 
-  <form class="intake-form" id="intake-form">
-    <textarea id="intake-text" rows="9" placeholder="Paste an inbound call note, email or contact form submission (German)…" aria-label="Inbound message"></textarea>
-    <button type="submit">Analyse intake</button>
-  </form>
-
-  <div id="intake-out"></div>
+    <div id="intake-out"></div>
+  </div>
+ </div>
 </main>
 
-<!-- ── Thesis ────────────────────────────────────────────────────────────── -->
-<main id="tab-thesis" class="wrap tabpane" hidden>
-  <section class="hero">
-    <h1>Why this vertical, and why this wedge.</h1>
-    <p class="lede">The short version. The full investment memo and the 30-day plan sit next to this app in the repo.</p>
-  </section>
+<!-- ── Settings ──────────────────────────────────────────────────────────── -->
+<div class="modal-back" id="settings" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="set-title">
+    <div class="modal-head">
+      <h2 id="set-title">Settings</h2>
+      <button class="icon-btn" id="close-settings" aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <h3>Answer synthesis</h3>
+      <p class="muted small">
+        Retrieval always runs locally in this browser. Connect a model to have answers written from the
+        retrieved passages; without one, the hub returns the passages themselves and pre-written answers
+        for common questions rather than generating text.
+      </p>
+      <label for="apikey">Anthropic API key</label>
+      <div class="keyrow">
+        <input id="apikey" type="password" placeholder="sk-ant-…" autocomplete="off">
+        <button id="savekey" type="button">Connect</button>
+      </div>
+      <div class="keystatus" id="keystate"></div>
+      <p class="muted small">
+        Stored only in this browser's <code>localStorage</code> and sent only to <code>api.anthropic.com</code>.
+        Never transmitted anywhere else.
+      </p>
+      <button class="ghost full" id="clearkey" type="button">Disconnect</button>
 
-  <div class="cards">
-    <div class="card">
-      <h3>The thesis is not "Steuerberater are under-digitised"</h3>
-      <p>They aren't. DATEV reaches the overwhelming majority of German practices and is deeply embedded. Pitching a digitisation gap means losing to an incumbent roadmap.</p>
-      <p>The real constraint is <strong>staffing</strong>. Practices turn work away because they cannot hire, and the partner cohort is ageing out. So TaxHub is sold as <strong>capacity, not software</strong> — priced against an assistant's salary, not against a per-seat licence.</p>
-    </div>
-    <div class="card">
-      <h3>Wedge: intake. Moat: knowledge.</h3>
-      <p>Intake leads because it needs <strong>no DATEV integration</strong>, so it avoids the procurement fight entirely, and its ROI is countable in missed calls and won mandates.</p>
-      <p>Knowledge is what compounds. The firm-private corpus, the citation trail and the correction history are the assets that survive generation becoming free.</p>
-    </div>
-    <div class="card">
-      <h3>What this demo is actually proving</h3>
-      <p>That the grounded layer is buildable on real regulatory material, that citations can be <strong>verifiable rather than decorative</strong>, and that the liability-bearing logic — deadlines, checklists — belongs in deterministic code with the model reading and drafting around it.</p>
-    </div>
-    <div class="card accent">
-      <h3>Try the two things a Steuerberater would test first</h3>
-      <p>Ask about the <strong>Kleinunternehmer threshold</strong> and about <strong>retention periods</strong>. General-purpose assistants tend to answer 22.000/50.000 € and "10 years for booking vouchers" — both superseded. The statute text here is current to July 2026.</p>
+      <hr>
+      <h3>Data sources</h3>
+      <p class="muted small" id="set-sources">…</p>
+      <p class="muted small">
+        Statute text from
+        <a href="https://www.gesetze-im-internet.de/" target="_blank" rel="noopener">gesetze-im-internet.de</a>
+        (Bundesministerium der Justiz / Bundesamt für Justiz), ingested unmodified.
+      </p>
     </div>
   </div>
-</main>
+</div>
 
-<footer class="wrap foot">
-  <div>
-    <strong>Sources.</strong> Statute text from gesetze-im-internet.de (BMJ / Bundesamt für Justiz),
-    ingested unmodified. Corpus build date <span id="stat-build">…</span>.
-    Retrieval runs entirely in your browser — no backend, no vector database, no telemetry.
-  </div>
-  <div class="disclaimer">
-    Built as a case study. Demonstration only — not tax advice, and no substitute for a Steuerberater.
-  </div>
-  <div class="keybox">
-    <label for="apikey">Optional — Anthropic API key for live synthesis</label>
-    <div class="keyrow">
-      <input id="apikey" type="password" placeholder="sk-ant-…" autocomplete="off">
-      <button id="savekey" type="button">Save</button>
-      <button id="clearkey" type="button" class="ghost">Clear</button>
-    </div>
-    <p class="muted small">
-      Stored in this browser's localStorage and sent only to api.anthropic.com. Without a key the app still
-      runs real retrieval and serves pre-written grounded answers for the seeded questions.
-      <span id="keystate"></span>
-    </p>
-  </div>
+<div id="toast" class="toast" hidden></div>
+
+<footer class="legal">
+  TaxHub is a support tool for the practice. Its output is not tax advice and requires professional review before use.
 </footer>
 
 <script type="module" src="assets/app.js"></script>

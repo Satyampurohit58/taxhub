@@ -5,11 +5,10 @@
  * are reading — an assistant in this vertical that blurs the line between
  * "grounded" and "generated" is worse than no assistant at all:
  *
- *   live      — an Anthropic key is configured; Claude synthesises over the
- *               retrieved passages under a strict grounding prompt
- *   seeded    — no key, but the question matches one of the pre-written
- *               grounded answers in answers.json
- *   retrieval — no key and no match: real search results, no synthesis, no
+ *   live      — a model is connected; it synthesises over the retrieved
+ *               passages under a strict grounding prompt
+ *   seeded    — no model, but the question matches a pre-written grounded answer
+ *   retrieval — no model and no match: real search results, no synthesis, no
  *               invented prose
  *
  * Retrieval is live in all three. Citations resolve against the loaded corpus
@@ -22,6 +21,7 @@ import { analyseIntake, SCENARIOS } from './intake.js';
 
 const MODEL = 'claude-sonnet-5';
 const KEY_STORE = 'taxhub.anthropic.key';
+const RECENT_STORE = 'taxhub.recent';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => {
@@ -30,18 +30,29 @@ const el = (tag, cls, html) => {
   if (html != null) n.innerHTML = html;
   return n;
 };
+// Yields to the event loop so the boot progress actually paints between steps.
+// Deliberately setTimeout rather than requestAnimationFrame: rAF is tied to
+// compositing and does not fire in headless/background contexts, which would
+// leave boot wedged on the first step forever.
+const yieldPaint = () => new Promise((r) => setTimeout(r, 16));
 
 let index = null;
 let corpus = null;
 let seeded = [];
-let byCite = new Map();
-let lastSources = [];
+const byCite = new Map();
 
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 
 async function boot() {
+  const step = (msg, pct) => {
+    $('#boot-step').textContent = msg;
+    $('#boot-bar').style.width = `${pct}%`;
+  };
+
+  step('Loading statute corpus…', 12);
+  await yieldPaint();
   const [c, a] = await Promise.all([
     fetch('data/corpus.json').then((r) => r.json()),
     fetch('data/answers.json').then((r) => r.json()),
@@ -49,57 +60,159 @@ async function boot() {
   corpus = c;
   seeded = a.answers;
 
+  step(`Indexing ${c.meta.totalChunks.toLocaleString('en-US')} passages…`, 55);
+  await yieldPaint();
   index = new Index(c.chunks);
   for (const ch of c.chunks) if (!byCite.has(ch.cite)) byCite.set(ch.cite, ch);
 
+  step('Ready', 100);
+
+  // Sidebar facts
   $('#stat-chunks').textContent = c.meta.totalChunks.toLocaleString('en-US');
   $('#stat-laws').textContent = c.meta.laws.length;
-  $('#stat-build').textContent = c.meta.statuteBuildDate;
+  $('#stat-build').textContent = new Date(c.meta.statuteBuildDate)
+    .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  for (const law of c.meta.laws) {
+    const li = el('li', null, escapeHtml(law.abbr));
+    li.title = `${law.long} — ${law.sections} §§, ${law.chunks} passages`;
+    $('#lawlist').append(li);
+  }
+  $('#set-sources').textContent =
+    `${c.meta.totalChunks.toLocaleString('en-US')} passages from ${c.meta.laws.length} statutes: ` +
+    `${c.meta.laws.map((l) => l.abbr).join(', ')}. Statute text current as of ${c.meta.statuteBuildDate}.`;
 
-  // Seeded questions double as the example chips.
-  const ex = $('#examples');
+  // Seeded questions double as the suggested questions.
   for (const s of seeded) {
     const b = el('button', null, escapeHtml(s.q));
     b.onclick = () => { $('#q').value = s.q; ask(s.q); };
-    ex.append(b);
+    $('#examples').append(b);
   }
 
-  const sc = $('#scenarios');
-  SCENARIOS.forEach((s) => {
-    const b = el('button', null, `${escapeHtml(s.label)} <span class="hint">— ${escapeHtml(s.hint)}</span>`);
-    b.onclick = () => { $('#intake-text').value = s.text; runIntake(); };
-    sc.append(b);
+  SCENARIOS.forEach((s, i) => {
+    const li = el('li');
+    const b = el('button', null,
+      `<span class="sl">${escapeHtml(s.label)}</span><span class="sh">${escapeHtml(s.hint)}</span>`);
+    b.onclick = () => {
+      for (const other of $('#scenarios').querySelectorAll('button')) other.classList.remove('on');
+      b.classList.add('on');
+      $('#intake-text').value = s.text;
+      runIntake();
+    };
+    li.append(b);
+    $('#scenarios').append(li);
   });
+  $('#intake-count').textContent = SCENARIOS.length;
+  $('#intake-count').hidden = false;
+
+  renderRecent();
+  refreshKeyState();
 
   $('#ask-btn').disabled = false;
-  refreshKeyState();
+  await yieldPaint();
+  $('#boot').classList.add('gone');
+  setTimeout(() => ($('#boot').hidden = true), 400);
+
+  // Deep links: ?q=… reruns a question, ?tab=intake opens the other surface.
+  // An answer is a URL you can send to a colleague, which is how this actually
+  // gets used in a practice.
+  const params = new URLSearchParams(location.search);
+  if (params.get('tab') === 'intake') selectTab('intake');
+  const sample = parseInt(params.get('sample'), 10);
+  if (sample >= 1 && sample <= SCENARIOS.length) {
+    selectTab('intake');
+    $('#scenarios').querySelectorAll('button')[sample - 1].click();
+  }
+  const q = params.get('q');
+  if (q) {
+    $('#q').value = q;
+    ask(q);
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Tabs
+// Chrome: tabs, toast, modal, shortcuts
 // ---------------------------------------------------------------------------
+
+function selectTab(name) {
+  for (const x of $('#tabs').children) x.classList.toggle('on', x.dataset.tab === name);
+  for (const t of ['knowledge', 'intake']) $(`#tab-${t}`).hidden = t !== name;
+  window.scrollTo({ top: 0 });
+}
 
 $('#tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-tab]');
-  if (!b) return;
-  for (const x of $('#tabs').children) x.classList.toggle('on', x === b);
-  for (const name of ['knowledge', 'intake', 'thesis']) {
-    $(`#tab-${name}`).hidden = name !== b.dataset.tab;
+  if (b) selectTab(b.dataset.tab);
+});
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.hidden = false;
+  requestAnimationFrame(() => t.classList.add('show'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => (t.hidden = true), 220);
+  }, 1900);
+}
+
+const openSettings = (open) => {
+  $('#settings').hidden = !open;
+  if (open) $('#apikey').focus();
+};
+$('#open-settings').onclick = () => openSettings(true);
+$('#close-settings').onclick = () => openSettings(false);
+$('#settings').addEventListener('click', (e) => { if (e.target.id === 'settings') openSettings(false); });
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') openSettings(false);
+  if (e.key === '/' && !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) {
+    e.preventDefault();
+    $('#q').focus();
   }
 });
+
+// ---------------------------------------------------------------------------
+// Recent questions
+// ---------------------------------------------------------------------------
+
+const getRecent = () => { try { return JSON.parse(localStorage.getItem(RECENT_STORE)) || []; } catch { return []; } };
+
+function pushRecent(q) {
+  const list = [q, ...getRecent().filter((x) => x !== q)].slice(0, 6);
+  localStorage.setItem(RECENT_STORE, JSON.stringify(list));
+  renderRecent();
+}
+
+function renderRecent() {
+  const list = getRecent();
+  $('#recent-block').hidden = !list.length;
+  const ul = $('#recent');
+  ul.textContent = '';
+  for (const q of list) {
+    const li = el('li');
+    const b = el('button', null, escapeHtml(q));
+    b.title = q;
+    b.onclick = () => { $('#q').value = q; ask(q); };
+    li.append(b);
+    ul.append(li);
+  }
+}
+
+$('#clear-recent').onclick = () => { localStorage.removeItem(RECENT_STORE); renderRecent(); };
 
 // ---------------------------------------------------------------------------
 // Rendering helpers
 // ---------------------------------------------------------------------------
 
-/** Minimal inline markup: **bold** and [[citation]]. Escapes first. */
+/** Minimal inline markup: **bold**, `code` and [[citation]]. Escapes first. */
 function renderInline(text) {
   let h = escapeHtml(text);
   h = h.replace(/\[\[(.+?)\]\]/g, (_, cite) => {
     const key = cite.trim();
-    const hit = byCite.get(key);
-    if (!hit) {
-      return `<span class="cite dead" title="This citation does not resolve to a chunk in the loaded corpus.">${escapeHtml(key)} ?</span>`;
+    if (!byCite.has(key)) {
+      return `<span class="cite dead" title="This citation does not resolve to a passage in the knowledge base.">${escapeHtml(key)} ?</span>`;
     }
     return `<button class="cite" data-cite="${escapeHtml(key)}">${escapeHtml(key)}</button>`;
   });
@@ -125,9 +238,16 @@ function renderSources(hits, query) {
       `<a href="${h.url}" target="_blank" rel="noopener">Open ${escapeHtml(h.section)} ${escapeHtml(h.law)} on gesetze-im-internet.de →</a>`));
     box.append(d);
   }
-  $('#retr-meta').textContent =
-    `— ${hits.length} of ${corpus.meta.totalChunks.toLocaleString('en-US')} chunks, ranked by hybrid BM25`;
+  $('#retr-meta').textContent = `· ${hits.length} passages`;
+  $('#toggle-all').textContent = 'Expand all';
 }
+
+$('#toggle-all').onclick = () => {
+  const all = [...$('#sources').querySelectorAll('details')];
+  const open = all.some((d) => !d.open);
+  all.forEach((d) => (d.open = open));
+  $('#toggle-all').textContent = open ? 'Collapse all' : 'Expand all';
+};
 
 /** Clicking a citation chip opens and flashes the matching source card. */
 document.addEventListener('click', (e) => {
@@ -141,17 +261,20 @@ document.addEventListener('click', (e) => {
   setTimeout(() => card.classList.remove('flash'), 1400);
 });
 
+$('#copy-answer').onclick = async () => {
+  await navigator.clipboard.writeText($('#answer').innerText);
+  toast('Answer copied');
+};
+
 function setMode(kind, text) {
-  const labels = { live: 'Live synthesis', seeded: 'Pre-generated', retrieval: 'Retrieval only', err: 'Error' };
-  $('#mode-bar').innerHTML =
-    `<span class="badge ${kind}">${labels[kind]}</span><span>${text}</span>`;
+  const labels = { live: 'Grounded', seeded: 'Grounded · saved', retrieval: 'Sources only', err: 'Unavailable' };
+  $('#mode-bar').innerHTML = `<span class="badge ${kind}">${labels[kind]}</span><span>${text}</span>`;
 }
 
 // ---------------------------------------------------------------------------
 // Seeded matching
 // ---------------------------------------------------------------------------
 
-/** Token-overlap match of the query against each seeded question and its variants. */
 function matchSeeded(query) {
   const q = new Set(tokenize(query));
   if (!q.size) return null;
@@ -223,7 +346,7 @@ async function synthesise(query, hits, key) {
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${res.statusText}${body ? ` — ${body.slice(0, 200)}` : ''}`);
+    throw new Error(`${res.status} ${res.statusText}${body ? ` — ${body.slice(0, 160)}` : ''}`);
   }
   const json = await res.json();
   return json.content.map((c) => (c.type === 'text' ? c.text : '')).join('');
@@ -248,19 +371,20 @@ async function ask(query) {
   query = query.trim();
   if (!query || !index) return;
 
-  $('#knowledge-empty').hidden = true;
+  $('#suggest-block').hidden = true;
   $('#answer-region').hidden = false;
   $('#ask-btn').disabled = true;
+  pushRecent(query);
+  history.replaceState(null, '', `?q=${encodeURIComponent(query)}`);
 
   const t0 = performance.now();
   const hits = index.search(query, 8);
   const ms = Math.round(performance.now() - t0);
-  lastSources = hits;
   renderSources(hits, query);
 
   if (!hits.length) {
-    setMode('retrieval', `No passage matched in ${ms} ms.`);
-    $('#answer').innerHTML = '<p class="muted">Nothing in the corpus matched that. The corpus covers EStG, UStG, AO, StBVV, GewStG, KStG, EStDV, UStDV and the bookkeeping sections of the HGB — questions outside those statutes will not resolve.</p>';
+    setMode('retrieval', `Nothing matched (${ms} ms)`);
+    $('#answer').innerHTML = '<p class="muted">No passage in the knowledge base matches that. It currently covers EStG, UStG, AO, StBVV, GewStG, KStG, EStDV, UStDV and the bookkeeping sections of the HGB.</p>';
     $('#ask-btn').disabled = false;
     return;
   }
@@ -268,43 +392,38 @@ async function ask(query) {
   const key = localStorage.getItem(KEY_STORE);
 
   if (key) {
-    setMode('live', `Retrieved ${hits.length} passages in ${ms} ms. Synthesising with ${MODEL}…`);
-    $('#answer').innerHTML = '<p class="loading"><span class="spin"></span>Grounding the answer in the retrieved paragraphs…</p>';
+    setMode('live', `${hits.length} passages in ${ms} ms · writing answer…`);
+    $('#answer').innerHTML = '<span class="skel" style="width:92%"></span><span class="skel" style="width:99%"></span><span class="skel" style="width:74%"></span><span class="skel" style="width:88%"></span>';
     try {
-      const text = await synthesise(query, hits, key);
-      renderMarkdownish(text);
-      setMode('live', `Retrieved ${hits.length} passages in ${ms} ms, synthesised by ${MODEL} under a strict grounding prompt. Citations resolve to the passages below.`);
+      renderMarkdownish(await synthesise(query, hits, key));
+      setMode('live', `Written from ${hits.length} retrieved passages · every claim cited below`);
       $('#ask-btn').disabled = false;
       return;
     } catch (err) {
-      setMode('err', `Live synthesis failed (${err.message}). Falling back to retrieval — the sources below are unaffected.`);
-      // fall through to the no-key paths
+      toast('Model unavailable — showing sources');
+      setMode('err', `Synthesis failed (${err.message}). Sources below are unaffected.`);
     }
   }
 
   const match = matchSeeded(query);
   if (match) {
     renderSeeded(match.entry);
-    setMode('seeded',
-      `Retrieved ${hits.length} passages in ${ms} ms. No API key configured, so this is the pre-written grounded answer for “${match.entry.q}” (match ${Math.round(match.score * 100)}%). Its citations resolve against the live corpus.`);
+    setMode('seeded', `Saved answer for “${match.entry.q}” · citations verified against the knowledge base`);
   } else {
     const a = $('#answer');
     a.textContent = '';
     a.append(el('p', 'thinking',
-      'No API key is configured and this question does not match one of the pre-written answers, so nothing has been synthesised — deliberately. Below are the actual passages retrieval returned, ranked, with your search terms highlighted.'));
+      'No model is connected, so nothing has been written for this question — deliberately. These are the passages the search returned, ranked, with your terms highlighted.'));
     a.append(el('p', null,
-      `Best match: ${renderInline(`[[${hits[0].cite}]]`)} — ${escapeHtml(hits[0].title || hits[0].lawLong)}.`));
+      `Closest match: ${renderInline(`[[${hits[0].cite}]]`)} — ${escapeHtml(hits[0].title || hits[0].lawLong)}.`));
     a.append(el('p', 'muted small',
-      'Add an Anthropic API key at the bottom of the page to see the full grounded synthesis over these same passages.'));
-    setMode('retrieval', `Retrieved ${hits.length} passages in ${ms} ms. No synthesis performed.`);
+      'Connect a model in Settings to have the answer written from these same passages.'));
+    setMode('retrieval', `${hits.length} passages in ${ms} ms · no answer written`);
   }
   $('#ask-btn').disabled = false;
 }
 
-$('#ask-form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  ask($('#q').value);
-});
+$('#ask-form').addEventListener('submit', (e) => { e.preventDefault(); ask($('#q').value); });
 
 // ---------------------------------------------------------------------------
 // Intake
@@ -318,24 +437,27 @@ function runIntake() {
 
   const r = analyseIntake(text, index);
   const p = r.classification.primary;
+  const grid = el('div', 'igrid');
+  const add = (node, full = true) => { if (full) node.classList.add('full'); grid.append(node); };
 
   // Headline
   const head = el('div', 'panel');
   head.append(el('div', 'headline', `
-    <span class="type">${p ? escapeHtml(p.type.label) : 'Unclassified'}</span>
+    <span class="type">${p ? escapeHtml(p.type.label) : 'Needs manual classification'}</span>
     ${p ? `<span class="de">${escapeHtml(p.type.de)}</span>` : ''}
-    <span class="pri p${4 - r.priority}">${escapeHtml(r.priorityLabel)}</span>`));
+    <span class="pri p${4 - r.priority}" style="margin-left:auto">${escapeHtml(r.priorityLabel)}</span>`));
   if (p) {
-    head.append(el('p', 'muted small',
-      `Confidence ${Math.round(r.classification.confidence * 100)}% · matched <span class="matchterms">${p.matched.map(escapeHtml).join(', ')}</span>` +
+    head.append(el('p', 'muted small', `
+      Confidence ${Math.round(r.classification.confidence * 100)}% · matched
+      <span class="matchterms">${p.matched.map(escapeHtml).join(', ')}</span>` +
       (r.classification.secondary.length
         ? ` · also considered ${r.classification.secondary.map((s) => escapeHtml(s.type.label)).join(', ')}`
         : '')));
-    head.append(el('p', null, `<strong>Triage note.</strong> ${escapeHtml(p.type.fit)}`));
+    head.append(el('p', null, `<strong>Triage.</strong> ${escapeHtml(p.type.fit)}`));
   }
-  out.append(head);
+  add(head);
 
-  if (r.flag) out.append(el('div', 'flagbox', `<strong>Escalate.</strong> ${escapeHtml(r.flag)}`));
+  if (r.flag) add(el('div', 'flagbox', `<strong>Escalate.</strong> ${escapeHtml(r.flag)}`));
 
   // Deadline
   if (r.deadline) {
@@ -343,20 +465,20 @@ function runIntake() {
     const box = el('div', `deadline ${d.state}`);
     if (d.state === 'undated') {
       box.innerHTML = `<div class="big">Deadline undetermined</div>
-        <div>A statutory period runs from ${escapeHtml(d.basis)} (${escapeHtml(d.cite)}), but no date was found in the message. Request the notified date before anything else.</div>`;
+        <div class="sub">A statutory period runs from ${escapeHtml(d.basis)} (${escapeHtml(d.cite)}), but no date was found in the message. Request the notified date before anything else.</div>`;
     } else {
       const rel = d.daysLeft < 0
-        ? `<strong>expired ${Math.abs(d.daysLeft)} days ago</strong>`
-        : `<strong>${d.daysLeft} days remaining</strong>`;
+        ? `expired ${Math.abs(d.daysLeft)} days ago`
+        : `${d.daysLeft} days remaining`;
       box.innerHTML = `<div class="big">Einspruchsfrist ends ${escapeHtml(d.due)} — ${rel}</div>
-        <div>One month from ${escapeHtml(d.basis)}, detected as “${escapeHtml(d.baseRaw)}” in the message (${escapeHtml(d.cite)}).</div>`;
+        <div class="sub">One month from ${escapeHtml(d.basis)}, detected as “${escapeHtml(d.baseRaw)}” in the message (${escapeHtml(d.cite)}).</div>`;
     }
-    out.append(box);
+    add(box);
   }
 
-  // Structured record
+  // Record + checks (left) | documents + anchors (right)
   const rec = el('div', 'panel');
-  rec.append(el('h3', null, 'Structured record'));
+  rec.append(el('h3', null, 'Mandate record'));
   const dl = el('dl', 'kv');
   const row = (k, v) => {
     dl.append(el('dt', null, escapeHtml(k)));
@@ -371,25 +493,25 @@ function runIntake() {
   row('Dates found', r.dates.length ? r.dates.map((d) => d.raw).join(', ') : null);
   row('Fee basis', r.fee);
   rec.append(dl);
-  out.append(rec);
-
-  if (r.observations.length) {
-    const o = el('div', 'panel');
-    o.append(el('h3', null, 'Automatic checks'));
-    o.append(el('ul', 'obs', r.observations.map((x) => `<li>${escapeHtml(x)}</li>`).join('')));
-    out.append(o);
-  }
+  add(rec, false);
 
   if (r.docs.length) {
     const d = el('div', 'panel');
     d.append(el('h3', null, 'Documents to request'));
     d.append(el('ul', 'docs', r.docs.map((x) => `<li>${escapeHtml(x)}</li>`).join('')));
-    out.append(d);
+    add(d, false);
+  }
+
+  if (r.observations.length) {
+    const o = el('div', 'panel');
+    o.append(el('h3', null, 'Automatic checks'));
+    o.append(el('ul', 'obs', r.observations.map((x) => `<li>${escapeHtml(x)}</li>`).join('')));
+    add(o, false);
   }
 
   if (r.anchors.length) {
     const a = el('div', 'panel');
-    a.append(el('h3', null, 'Statutory anchors — retrieved live from the same corpus'));
+    a.append(el('h3', null, 'Statutory basis'));
     for (const h of r.anchors) {
       const det = el('details', 'src');
       det.append(el('summary', null,
@@ -398,37 +520,39 @@ function runIntake() {
       det.append(el('div', 'srcfoot', `<a href="${h.url}" target="_blank" rel="noopener">Open on gesetze-im-internet.de →</a>`));
       a.append(det);
     }
-    out.append(a);
+    add(a, false);
   }
 
   // Drafted reply
   const dr = el('div', 'panel');
-  dr.append(el('h3', null, 'Drafted reply — German, ready to review and send'));
+  dr.append(el('h3', null, 'Drafted reply — review before sending'));
   const wrapEl = el('div', 'draft');
   wrapEl.append(el('pre', null, escapeHtml(r.email)));
-  const copy = el('button', 'copy', 'Copy');
-  copy.onclick = async () => {
-    await navigator.clipboard.writeText(r.email);
-    copy.textContent = 'Copied';
-    setTimeout(() => (copy.textContent = 'Copy'), 1500);
-  };
+  const copy = el('button', 'mini copy', 'Copy');
+  copy.onclick = async () => { await navigator.clipboard.writeText(r.email); toast('Draft copied'); };
   wrapEl.append(copy);
   dr.append(wrapEl);
-  out.append(dr);
+  add(dr);
+
+  out.append(grid);
 }
 
 $('#intake-form').addEventListener('submit', (e) => { e.preventDefault(); runIntake(); });
+$('#intake-clear').onclick = () => {
+  $('#intake-text').value = '';
+  $('#intake-out').textContent = '';
+  for (const b of $('#scenarios').querySelectorAll('button')) b.classList.remove('on');
+};
 
 // ---------------------------------------------------------------------------
-// API key
+// Model connection
 // ---------------------------------------------------------------------------
 
 function refreshKeyState() {
   const has = !!localStorage.getItem(KEY_STORE);
-  $('#keystate').textContent = has
-    ? 'Key stored — live synthesis is on.'
-    : 'No key stored — running in pre-generated / retrieval-only mode.';
-  $('#keystate').style.color = has ? 'var(--ok)' : 'var(--ink-3)';
+  const s = $('#keystate');
+  s.textContent = has ? `Connected — answers written by ${MODEL}.` : 'Not connected — saved answers and sources only.';
+  s.style.color = has ? 'var(--ok)' : 'var(--ink-3)';
 }
 
 $('#savekey').onclick = () => {
@@ -437,10 +561,12 @@ $('#savekey').onclick = () => {
   localStorage.setItem(KEY_STORE, v);
   $('#apikey').value = '';
   refreshKeyState();
+  toast('Model connected');
+  openSettings(false);
 };
-$('#clearkey').onclick = () => { localStorage.removeItem(KEY_STORE); refreshKeyState(); };
+$('#clearkey').onclick = () => { localStorage.removeItem(KEY_STORE); refreshKeyState(); toast('Model disconnected'); };
 
 boot().catch((err) => {
-  document.body.prepend(el('div', 'wrap',
-    `<p style="color:var(--crit);padding:20px">Failed to load the corpus: ${escapeHtml(err.message)}. This page must be served over HTTP — opening index.html directly from disk will not work.</p>`));
+  $('#boot-step').textContent = `Failed to load: ${err.message}`;
+  $('#boot-step').style.color = 'var(--crit)';
 });

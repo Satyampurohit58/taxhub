@@ -30,7 +30,7 @@ Then click a citation — it expands the actual statute text and links to the of
 
 Two deliberate decisions I would want to talk through:
 
-1. **The app tells you which mode produced each answer** — live synthesis, pre-generated, or retrieval-only. With no API key it does real retrieval and shows you the paragraphs rather than inventing prose. For this vertical a visible "I don't know" beats a fluent wrong answer, so I put the mode permanently on screen. Paste an Anthropic key in the footer and you get full live synthesis over the same passages.
+1. **The app tells you which mode produced each answer** — live synthesis, pre-generated, or retrieval-only. With no API key it does real retrieval and shows you the paragraphs rather than inventing prose. For this vertical a visible "I don't know" beats a fluent wrong answer, so I put the mode permanently on screen. Connect an Anthropic key in Settings and you get full live synthesis over the same passages.
 2. **Deadlines and checklists are deterministic code, not model output.** A language model should not be the thing deciding whether a one-month objection period has started. It reads messy German into structured slots and drafts the reply; the liability-bearing logic stays in code.
 
 The memo, the 30-day plan and an honest limitations section are in the repo. The short version of the limitations: the corpus is statutes only (the firm's *own* documents are the real moat and are not in here), the intake taxonomy is reasoned rather than observed from real calls — which is exactly what day 1–10 of the 30-day plan is for — and the market figures need a proper sourcing pass against BStBK and DATEV's annual report before anyone acts on them. I flagged those rather than dressing them up.
