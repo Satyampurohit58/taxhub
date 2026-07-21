@@ -1,0 +1,15 @@
+{
+  "name": "taxhub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TaxHub — grounded knowledge and intake core for German tax practices. Static, backend-free, zero dependencies.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node serve.mjs",
+    "build": "node ingest/build-corpus.mjs",
+    "eval": "node ingest/eval-retrieval.mjs",
+    "verify": "node ingest/verify.mjs",
+    "check": "node ingest/build-corpus.mjs && node ingest/eval-retrieval.mjs && node ingest/verify.mjs"
+  }
+}

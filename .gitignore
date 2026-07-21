@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# Never commit a key. The app reads it from the browser's localStorage only.
+.env
+.env.*

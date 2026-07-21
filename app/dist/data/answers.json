@@ -1,0 +1,181 @@
+{
+  "_comment": "Pre-generated grounded answers for the seeded questions, used when no API key is configured. Every [[...]] marker is an exact `cite` string from corpus.json and resolves at runtime to the real statute chunk — so the citations are verifiable, not decorative. Answers are in English (per the case brief); source passages stay in the original German.",
+  "answers": [
+    {
+      "id": "erechnung",
+      "q": "When does the German e-invoicing obligation apply, and which formats are allowed?",
+      "variants": [
+        "Ab wann gilt die E-Rechnungspflicht und welches Format ist zulässig?",
+        "e-rechnung pflicht 2025 2026 2027 format xrechnung zugferd",
+        "Do my clients have to send electronic invoices now?",
+        "e-invoicing obligation Germany B2B deadline"
+      ],
+      "blocks": [
+        {
+          "t": "**Receiving** is already mandatory, **issuing** is being phased in. Since 1 January 2025 every domestic business must be able to *receive* a structured e-invoice — there is no transition relief on the receiving side, and no consent from the recipient is required. [[§ 14 Abs. 1 UStG]]"
+        },
+        {
+          "t": "The statute defines an e-invoice narrowly: it must be issued, transmitted and received **in a structured electronic format** that permits electronic processing. A PDF sent by email is explicitly *not* an e-invoice — it counts as a `sonstige Rechnung`. This is the single most common misunderstanding in practice. [[§ 14 Abs. 1 UStG]]"
+        },
+        {
+          "h": "Transition timetable for issuing",
+          "t": "Paper or unstructured electronic invoices (with the recipient's consent) remain permissible: for turnover in **2025 and 2026**, until 31 December 2026. For turnover in **2027**, only if the issuer's total turnover in the preceding year was **not more than 800.000 €**. From 2028 the obligation applies without relief. [[§ 27 Abs. 38 UStG]]"
+        },
+        {
+          "h": "What this means for the practice",
+          "t": "Clients below the 800.000 € line get one extra year, so the practice needs a per-client turnover check, not a blanket rollout. Retention rules were also re-aligned from 1 January 2025 and apply to every invoice whose retention period had not yet expired on 31 December 2024. [[§ 27 Abs. 40 UStG]]"
+        }
+      ],
+      "caveat": "XRechnung and ZUGFeRD (Profil EN 16931) are the formats that meet the EN 16931 standard referenced by the statute; the standard itself is named in § 14 Abs. 1 Satz 6 UStG rather than the format brand names."
+    },
+    {
+      "id": "kleinunternehmer",
+      "q": "Up to what turnover does the Kleinunternehmer rule apply?",
+      "variants": [
+        "Bis zu welcher Umsatzgrenze bin ich Kleinunternehmer?",
+        "kleinunternehmerregelung grenze umsatz 2025",
+        "small business VAT exemption threshold Germany",
+        "when do I have to start charging VAT"
+      ],
+      "blocks": [
+        {
+          "t": "Turnover is VAT-exempt where total turnover in the **preceding** calendar year did not exceed **25.000 €** and total turnover in the **current** calendar year does not exceed **100.000 €**. [[§ 19 Abs. 1 UStG]]"
+        },
+        {
+          "h": "The two limits behave differently",
+          "t": "The 25.000 € figure is a look-back test. The 100.000 € figure is a live ceiling in the running year: the moment it is exceeded, the exemption ends **for the turnover that breaches it** — it is not a retrospective loss of status for the whole year. This asymmetry is what catches fast-growing clients mid-year."
+        },
+        {
+          "h": "How total turnover is computed",
+          "t": "`Gesamtumsatz` is measured on **cash received** (`vereinnahmte Entgelte`), less certain exempt turnover. Disposals of fixed assets (`Wirtschaftsgüter des Anlagevermögens`) are left out of the calculation — so selling a company vehicle does not push a client over the line. [[§ 19 Abs. 2 UStG]]"
+        }
+      ],
+      "caveat": "These are the thresholds as reformed with effect from 2025. The widely-quoted 22.000 € / 50.000 € pair is the superseded pre-2025 rule — worth checking any answer you get from a general-purpose AI tool against the current statute text above."
+    },
+    {
+      "id": "aufbewahrung",
+      "q": "How long must accounting records and invoices be retained?",
+      "variants": [
+        "Wie lange muss ich Buchungsbelege und Rechnungen aufbewahren?",
+        "aufbewahrungsfristen 10 jahre 8 jahre 6 jahre",
+        "record retention period Germany tax",
+        "when can my client throw away old receipts"
+      ],
+      "blocks": [
+        {
+          "t": "Three different periods apply, and since the 2024/2025 reform they no longer all run for ten years: **10 years** for books, records, inventories, annual accounts and management reports; **8 years** for `Buchungsbelege` (booking vouchers, including invoices); **6 years** for the remaining documents such as received and sent commercial letters. [[§ 147 Abs. 3 AO]]"
+        },
+        {
+          "h": "The reduction that matters commercially",
+          "t": "Booking vouchers dropped from ten to **eight** years. For a practice holding client archives this is a concrete storage and cost decision, and it is the number most general AI tools still get wrong."
+        },
+        {
+          "h": "Commercial law runs in parallel",
+          "t": "The HGB imposes its own retention duties on merchants, and records may be kept on image or data carriers provided reproduction is faithful, available throughout the period and legible at any time within a reasonable period. Tax and commercial obligations apply alongside each other — the longer one governs in practice. [[§ 257 Abs. 3 HGB]]"
+        },
+        {
+          "h": "Where invoices may be stored",
+          "t": "Domestic businesses must retain invoices in Germany. Storage elsewhere in the EU is permitted only for electronic retention allowing full remote online access, download and use — and the tax office must be notified of the storage location. Relevant for any client on a non-EU cloud. [[§ 14b Abs. 2 UStG]]"
+        }
+      ]
+    },
+    {
+      "id": "abgabefrist",
+      "q": "What is the filing deadline for annual tax returns?",
+      "variants": [
+        "Wann muss die Steuererklärung abgegeben werden?",
+        "abgabefrist steuererklärung frist beraten steuerberater",
+        "tax return filing deadline Germany",
+        "filing deadline for the annual return extended by a Steuerberater"
+      ],
+      "blocks": [
+        {
+          "t": "The statutory baseline is **seven months** after the end of the calendar year — i.e. 31 July of the following year for a normal calendar-year return, unless a specific tax law says otherwise. [[§ 149 Abs. 2 AO]]"
+        },
+        {
+          "h": "Represented clients get longer",
+          "t": "Where the return is prepared by a Steuerberater, the extended deadline runs to the **last day of February of the second** following calendar year (31 July of that second year for the deviating-fiscal-year cases). That extension is the practice's core planning constraint for the whole season."
+        },
+        {
+          "h": "The tax office can pull a return forward",
+          "t": "Returns can be called in early — including on the basis of an **automated random selection** — with a deadline of four months from notification. The notice must disclose that it stems from random selection, and no further reasoning is required. An early call-in can never set a shorter deadline than the general one. [[§ 149 Abs. 4 AO]]"
+        }
+      ],
+      "caveat": "Where a deadline falls on a weekend or public holiday the general deadline rules of the AO shift it to the next working day."
+    },
+    {
+      "id": "buchfuehrungspflicht",
+      "q": "From what turnover does a business have to keep double-entry books?",
+      "variants": [
+        "Ab welchem Umsatz muss ich Bücher führen?",
+        "buchführungspflicht grenze umsatz gewinn EÜR bilanz",
+        "when must a client switch from EÜR to Bilanz",
+        "bookkeeping obligation threshold Germany"
+      ],
+      "blocks": [
+        {
+          "t": "A trader or farmer must keep books and prepare annual accounts once the tax office establishes either **turnover above 800.000 €** in a calendar year, or **profit above 80.000 €** in the business year. Either limit on its own is enough. [[§ 141 Abs. 1 AO]]"
+        },
+        {
+          "h": "This is a secondary obligation",
+          "t": "§ 141 AO only bites where a bookkeeping duty does not already follow from commercial law via § 140 AO. A registered merchant is typically already obliged under the HGB, so § 141 mostly catches non-merchant traders and farmers."
+        },
+        {
+          "h": "Practical trigger for the practice",
+          "t": "The obligation does not start automatically — it begins from the business year following the tax office's notification. In practice this is the moment a client has to move from `Einnahmenüberschussrechnung` to full accounts, which is a scope and fee change the practice should get ahead of rather than discover late."
+        }
+      ]
+    },
+    {
+      "id": "honorar",
+      "q": "What can the practice bill for a Einnahmenüberschussrechnung and for time-based work?",
+      "variants": [
+        "Was kostet eine Einnahmenüberschussrechnung nach der Gebührenordnung?",
+        "StBVV zeitgebühr stundensatz honorar abrechnung EÜR",
+        "how much can a Steuerberater charge",
+        "fee schedule tax advisor Germany"
+      ],
+      "blocks": [
+        {
+          "h": "Preparing an EÜR",
+          "t": "The fee is **5/10 to 30/10** of a full fee under Tabelle B. The `Gegenstandswert` is the higher of total operating income or total operating expenses, subject to a floor of **17.500 €**. [[§ 25 Abs. 1 StBVV]]"
+        },
+        {
+          "h": "The written explanatory report is billed separately",
+          "t": "A written `Erläuterungsbericht` accompanying the EÜR carries an additional **2/10 to 12/10** of a full fee under Tabelle B, on the same Gegenstandswert. Frequently performed and not billed. [[§ 25 Abs. 4 StBVV]]"
+        },
+        {
+          "h": "Time-based fee",
+          "t": "Where the regulation provides for it, or where there is no sufficient basis to estimate the Gegenstandswert, the `Zeitgebühr` applies at **16,50 € to 41,00 € per commenced quarter hour** — roughly 66 € to 164 € per hour. [[§ 13 StBVV]]"
+        },
+        {
+          "h": "Why this is a revenue question, not an admin question",
+          "t": "The StBVV sets a range, not a price. Most small practices bill near the bottom of the range out of habit and under-record time on advisory work. Making the applicable range visible at the moment work is captured is one of the clearest ways software pays for itself here."
+        }
+      ]
+    },
+    {
+      "id": "einspruch",
+      "q": "How long does a client have to file an objection against a tax assessment?",
+      "variants": [
+        "Wie lange habe ich Zeit für einen Einspruch?",
+        "einspruchsfrist bescheid monat",
+        "objection deadline tax assessment Germany",
+        "appeal a Steuerbescheid deadline"
+      ],
+      "blocks": [
+        {
+          "t": "An objection must be filed **within one month of notification** (`Bekanntgabe`) of the administrative act. Against a self-assessed tax return (`Steueranmeldung`) the month runs from its receipt by the tax authority — or, in the § 168 Satz 2 cases, from when the authority's consent becomes known. [[§ 355 Abs. 1 AO]]"
+        },
+        {
+          "h": "One important exception",
+          "t": "An objection under § 347 Abs. 1 Satz 2 AO — failure to decide — is **not** subject to a time limit. [[§ 355 Abs. 2 AO]]"
+        },
+        {
+          "h": "Why front-desk capture matters here",
+          "t": "This is the highest-consequence deadline in a practice's inbound flow: a Bescheid mentioned in passing on a phone call starts a one-month clock. Any intake layer that does not reliably detect and date-stamp it is creating liability rather than removing it."
+        }
+      ]
+    }
+  ]
+}

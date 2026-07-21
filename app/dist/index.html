@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaxHub — grounded knowledge & intake for Steuerberater</title>
+<meta name="description" content="A thin but real slice of an AI-native operating hub for German tax practices: source-cited Q&A over live statute text, and structured intake triage.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>§</text></svg>">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap topbar">
+    <div class="brand">
+      <span class="mark">§</span>
+      <div>
+        <strong>TaxHub</strong>
+        <span class="sub">Vertical AI hub for Steuerberater — working slice</span>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="knowledge" class="on">Knowledge</button>
+      <button data-tab="intake">Intake</button>
+      <button data-tab="thesis">Thesis</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ── Knowledge ─────────────────────────────────────────────────────────── -->
+<main id="tab-knowledge" class="wrap tabpane">
+
+  <section class="hero">
+    <h1>Ask the firm's knowledge base.</h1>
+    <p class="lede">
+      Grounded in <strong id="stat-chunks">…</strong> paragraph-level chunks from
+      <strong id="stat-laws">…</strong> German tax statutes, retrieved unmodified from
+      <a href="https://www.gesetze-im-internet.de/" target="_blank" rel="noopener">gesetze-im-internet.de</a>.
+      Every claim carries a citation you can open and check.
+    </p>
+  </section>
+
+  <form class="ask" id="ask-form" autocomplete="off">
+    <input id="q" type="text" placeholder="e.g. How long must booking vouchers be retained?" aria-label="Question">
+    <button type="submit" id="ask-btn">Ask</button>
+  </form>
+
+  <div class="chips" id="examples"></div>
+
+  <div id="answer-region" hidden>
+    <div class="mode-bar" id="mode-bar"></div>
+    <article class="answer" id="answer"></article>
+    <section class="sources">
+      <h3>Retrieved sources <span class="muted" id="retr-meta"></span></h3>
+      <div id="sources"></div>
+    </section>
+  </div>
+
+  <div class="empty" id="knowledge-empty">
+    <p>Pick a question above, or type your own — retrieval runs live over the full corpus either way.</p>
+  </div>
+</main>
+
+<!-- ── Intake ────────────────────────────────────────────────────────────── -->
+<main id="tab-intake" class="wrap tabpane" hidden>
+
+  <section class="hero">
+    <h1>Turn an inbound message into a mandate.</h1>
+    <p class="lede">
+      Paste a call note, an email or a contact-form submission. The hub classifies the request,
+      computes the statutory deadline, lists the documents to request, indicates the StBVV fee
+      basis and drafts the reply.
+    </p>
+  </section>
+
+  <div class="chips" id="scenarios"></div>
+
+  <form class="intake-form" id="intake-form">
+    <textarea id="intake-text" rows="9" placeholder="Paste an inbound call note, email or contact form submission (German)…" aria-label="Inbound message"></textarea>
+    <button type="submit">Analyse intake</button>
+  </form>
+
+  <div id="intake-out"></div>
+</main>
+
+<!-- ── Thesis ────────────────────────────────────────────────────────────── -->
+<main id="tab-thesis" class="wrap tabpane" hidden>
+  <section class="hero">
+    <h1>Why this vertical, and why this wedge.</h1>
+    <p class="lede">The short version. The full investment memo and the 30-day plan sit next to this app in the repo.</p>
+  </section>
+
+  <div class="cards">
+    <div class="card">
+      <h3>The thesis is not "Steuerberater are under-digitised"</h3>
+      <p>They aren't. DATEV reaches the overwhelming majority of German practices and is deeply embedded. Pitching a digitisation gap means losing to an incumbent roadmap.</p>
+      <p>The real constraint is <strong>staffing</strong>. Practices turn work away because they cannot hire, and the partner cohort is ageing out. So TaxHub is sold as <strong>capacity, not software</strong> — priced against an assistant's salary, not against a per-seat licence.</p>
+    </div>
+    <div class="card">
+      <h3>Wedge: intake. Moat: knowledge.</h3>
+      <p>Intake leads because it needs <strong>no DATEV integration</strong>, so it avoids the procurement fight entirely, and its ROI is countable in missed calls and won mandates.</p>
+      <p>Knowledge is what compounds. The firm-private corpus, the citation trail and the correction history are the assets that survive generation becoming free.</p>
+    </div>
+    <div class="card">
+      <h3>What this demo is actually proving</h3>
+      <p>That the grounded layer is buildable on real regulatory material, that citations can be <strong>verifiable rather than decorative</strong>, and that the liability-bearing logic — deadlines, checklists — belongs in deterministic code with the model reading and drafting around it.</p>
+    </div>
+    <div class="card accent">
+      <h3>Try the two things a Steuerberater would test first</h3>
+      <p>Ask about the <strong>Kleinunternehmer threshold</strong> and about <strong>retention periods</strong>. General-purpose assistants tend to answer 22.000/50.000 € and "10 years for booking vouchers" — both superseded. The statute text here is current to July 2026.</p>
+    </div>
+  </div>
+</main>
+
+<footer class="wrap foot">
+  <div>
+    <strong>Sources.</strong> Statute text from gesetze-im-internet.de (BMJ / Bundesamt für Justiz),
+    ingested unmodified. Corpus build date <span id="stat-build">…</span>.
+    Retrieval runs entirely in your browser — no backend, no vector database, no telemetry.
+  </div>
+  <div class="disclaimer">
+    Built as a case study. Demonstration only — not tax advice, and no substitute for a Steuerberater.
+  </div>
+  <div class="keybox">
+    <label for="apikey">Optional — Anthropic API key for live synthesis</label>
+    <div class="keyrow">
+      <input id="apikey" type="password" placeholder="sk-ant-…" autocomplete="off">
+      <button id="savekey" type="button">Save</button>
+      <button id="clearkey" type="button" class="ghost">Clear</button>
+    </div>
+    <p class="muted small">
+      Stored in this browser's localStorage and sent only to api.anthropic.com. Without a key the app still
+      runs real retrieval and serves pre-written grounded answers for the seeded questions.
+      <span id="keystate"></span>
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="assets/app.js"></script>
+</body>
+</html>
